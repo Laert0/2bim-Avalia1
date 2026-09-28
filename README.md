@@ -22,6 +22,6 @@ Framework preset: `None`. Build command: vazio. Build output directory: `public`
 
 ## Identificação (preencha após o fork)
 
-Nome: 
-RA: 
-URL: https://
+Nome: Laerto Marcos Santin
+RA: 2025207381
+URL: https://SEU-SITE.pages.dev
