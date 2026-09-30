@@ -1,116 +1,219 @@
 import { gerarDesenho, numeroValido } from "../../lib/desenho.js";
 
-function resposta(
-  texto,
-  status,
-  contentType = "text/plain; charset=utf-8"
-) {
-  return new Response(texto, {
-    status,
-    headers: {
-      "Content-Type": contentType
-    }
-  });
-}
-
-export async function onRequest({ request, env }) {
-
-  // Método obrigatório: POST
-  if (request.method !== "POST") {
-    return resposta("Método não permitido.", 405);
-  }
-
-  // Lê o JSON enviado pelo navegador
-  let dados;
-
+export async function onRequestPost(context) {
   try {
-    dados = await request.json();
-  } catch {
-    return resposta("Corpo JSON inválido.", 400);
-  }
-
-  // Valida o número
-  if (!dados || !numeroValido(dados.numero)) {
-    return resposta(
-      "O campo numero deve ser um inteiro entre 1 e 100.",
-      400
-    );
-  }
-
-  // Verifica o Authorization Bearer
-  const autorizacao =
-    request.headers.get("Authorization") || "";
-
-  if (!autorizacao.startsWith("Bearer ")) {
-    return resposta("Token ausente ou inválido.", 401);
-  }
-
-  const token = autorizacao
-    .slice(7)
-    .trim();
-
-  if (!token) {
-    return resposta("Token ausente ou inválido.", 401);
-  }
-
-  // Client ID configurado no Cloudflare
-  if (!env.GOOGLE_CLIENT_ID) {
-    return resposta(
-      "Configuração do servidor ausente.",
-      500
-    );
-  }
-
-  // Verifica o ID Token diretamente com o Google
-  let verificacao;
-
-  try {
-
-    const respostaGoogle = await fetch(
-      "https://oauth2.googleapis.com/tokeninfo?id_token=" +
-      encodeURIComponent(token)
-    );
-
-    if (!respostaGoogle.ok) {
-      return resposta(
-        "Token inválido ou expirado.",
-        401
+    // --------------------------------------------------
+    // 1. Verifica o método
+    // --------------------------------------------------
+    if (context.request.method !== "POST") {
+      return new Response(
+        JSON.stringify({ erro: "Método não permitido." }),
+        {
+          status: 405,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8"
+          }
+        }
       );
     }
 
-    verificacao = await respostaGoogle.json();
+    // --------------------------------------------------
+    // 2. Verifica o corpo da requisição
+    // --------------------------------------------------
+    let corpo;
 
-  } catch {
-    return resposta(
-      "Não foi possível verificar o token.",
-      401
-    );
-  }
-
-  // Confere Client ID e e-mail verificado
-  if (
-    verificacao.aud !== env.GOOGLE_CLIENT_ID ||
-    verificacao.email_verified !== "true" ||
-    !verificacao.email
-  ) {
-    return resposta(
-      "Token inválido ou e-mail não verificado.",
-      401
-    );
-  }
-
-  // Gera o desenho assinado com o e-mail autenticado
-  const svg = gerarDesenho(
-    dados.numero,
-    verificacao.email
-  );
-
-  // Retorna o SVG
-  return new Response(svg, {
-    status: 200,
-    headers: {
-      "Content-Type": "image/svg+xml; charset=utf-8",
-      "Cache-Control": "no-store"
+    try {
+      corpo = await context.request.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ erro: "Corpo JSON inválido." }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8"
+          }
+        }
+      );
     }
-  });
+
+    const numero = Number(corpo?.numero);
+
+    if (!numeroValido(numero)) {
+      return new Response(
+        JSON.stringify({
+          erro: "Número inválido. Informe um número inteiro entre 1 e 100."
+        }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // 3. Obtém o token do Google
+    // --------------------------------------------------
+    const autorizacao = context.request.headers.get("Authorization");
+
+    if (!autorizacao || !autorizacao.startsWith("Bearer ")) {
+      return new Response(
+        JSON.stringify({
+          erro: "Token inválido ou ausente."
+        }),
+        {
+          status: 401,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    const idToken = autorizacao.substring("Bearer ".length).trim();
+
+    if (!idToken) {
+      return new Response(
+        JSON.stringify({
+          erro: "Token inválido ou ausente."
+        }),
+        {
+          status: 401,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // 4. Verifica o Client ID configurado no Cloudflare
+    // --------------------------------------------------
+    const clientId = context.env.GOOGLE_CLIENT_ID;
+
+    if (!clientId) {
+      return new Response(
+        JSON.stringify({
+          erro: "GOOGLE_CLIENT_ID não configurado no servidor."
+        }),
+        {
+          status: 500,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // 5. Valida o ID Token diretamente com o Google
+    // --------------------------------------------------
+    const respostaGoogle = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(
+        idToken
+      )}`
+    );
+
+    if (!respostaGoogle.ok) {
+      return new Response(
+        JSON.stringify({
+          erro: "Token inválido."
+        }),
+        {
+          status: 401,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    const verificacao = await respostaGoogle.json();
+
+    // --------------------------------------------------
+    // 6. Confere se o token pertence ao nosso Client ID
+    // --------------------------------------------------
+    if (verificacao.aud !== clientId) {
+      return new Response(
+        JSON.stringify({
+          erro: "Token inválido."
+        }),
+        {
+          status: 401,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // 7. Confere o e-mail
+    // --------------------------------------------------
+    const email = verificacao.email;
+
+    if (!email) {
+      return new Response(
+        JSON.stringify({
+          erro: "E-mail não encontrado no token."
+        }),
+        {
+          status: 401,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    // Aceita tanto true quanto "true"
+    const emailVerificado =
+      verificacao.email_verified === true ||
+      verificacao.email_verified === "true";
+
+    if (!emailVerificado) {
+      return new Response(
+        JSON.stringify({
+          erro: "E-mail não verificado."
+        }),
+        {
+          status: 401,
+          headers: {
+            "Content-Type": "application/json; charset=utf-8"
+          }
+        }
+      );
+    }
+
+    // --------------------------------------------------
+    // 8. Gera o desenho SVG
+    // --------------------------------------------------
+    const svg = gerarDesenho(numero, email);
+
+    // --------------------------------------------------
+    // 9. Retorna o SVG
+    // --------------------------------------------------
+    return new Response(svg, {
+      status: 200,
+      headers: {
+        "Content-Type": "image/svg+xml; charset=utf-8",
+        "Cache-Control": "no-store"
+      }
+    });
+  } catch (erro) {
+    console.error("Erro na API /api/desenho:", erro);
+
+    return new Response(
+      JSON.stringify({
+        erro: "Erro interno ao gerar o desenho."
+      }),
+      {
+        status: 500,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8"
+        }
+      }
+    );
+  }
 }
