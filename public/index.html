@@ -1,1 +1,65 @@
-arquivo temporario
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Desenho Assinado</title>
+
+  <link rel="stylesheet" href="style.css">
+
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+
+<body>
+
+  <main>
+
+    <header>
+      <h1>Desenho Assinado</h1>
+
+      <p>
+        Faça login com Google, escolha um número de 1 a 100 e gere seu desenho.
+      </p>
+    </header>
+
+    <section class="login">
+
+      <div id="google-login"></div>
+
+      <p id="usuario" aria-live="polite"></p>
+
+    </section>
+
+    <form id="formulario" novalidate>
+
+      <label for="numero">Número</label>
+
+      <input
+        id="numero"
+        name="numero"
+        type="number"
+        min="1"
+        max="100"
+        step="1"
+        required
+        placeholder="42"
+      >
+
+      <button type="submit">Desenhar</button>
+
+    </form>
+
+    <p id="mensagem" role="alert"></p>
+
+    <figure id="desenho" aria-live="polite"></figure>
+
+    <button id="baixar" type="button" hidden>
+      Baixar SVG
+    </button>
+
+  </main>
+
+  <script type="module" src="script.js"></script>
+
+</body>
+</html>
