@@ -3,27 +3,94 @@ name: ci
 on:
   push:
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   verificar:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Instalar SQLite
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sqlite3
 
       - name: Procura segredos versionados
+        shell: bash
         run: |
-if git grep -nE "GOCSPX-|client_secret *= *['\"][^'\"]+" -- . ':!*.md' ':!.github/workflows/ci.yml'; then            echo "::error::Possível segredo no repositório"
+          set -e
+
+          echo "Verificando possíveis segredos..."
+
+          if git grep -nE 'GOCSPX-|client_secret[[:space:]]*=' -- \
+            ':!.github/workflows/ci.yml' \
+            ':!.github/workflows/revisao-ia.yml' \
+            ':!.github/workflows/migrar.yml' \
+            ':!*.md'; then
+
+            echo "::error::Possível segredo encontrado no repositório."
             exit 1
           fi
 
+          echo "Nenhum segredo conhecido encontrado."
+
       - name: Aplica as migrações D1 em um SQLite local
+        shell: bash
         run: |
-          for f in migrations/*.sql; do
+          set -e
+
+          rm -f teste.db
+
+          if [ ! -d "migrations" ]; then
+            echo "::error::A pasta migrations não existe."
+            exit 1
+          fi
+
+          arquivos=$(find migrations -maxdepth 1 -type f -name "*.sql" | sort)
+
+          if [ -z "$arquivos" ]; then
+            echo "::error::Nenhuma migração SQL encontrada."
+            exit 1
+          fi
+
+          for f in $arquivos; do
+            echo "Aplicando migração: $f"
             sqlite3 teste.db < "$f"
           done
+
+          echo "Tabelas criadas:"
           sqlite3 teste.db ".tables"
 
+          echo "Estrutura da tabela notas:"
+          sqlite3 teste.db "PRAGMA table_info(notas);"
+
       - name: Valida HTML
-        run: npx --yes htmlhint "**/*.html"
+        shell: bash
+        run: |
+          set -e
+
+          arquivos=$(find . \
+            -type f \
+            -name "*.html" \
+            -not -path "./.git/*" \
+            -not -path "./node_modules/*")
+
+          if [ -z "$arquivos" ]; then
+            echo "::error::Nenhum arquivo HTML encontrado."
+            exit 1
+          fi
+
+          echo "Arquivos HTML encontrados:"
+          echo "$arquivos"
+
+          npx --yes htmlhint $arquivos
+
+      - name: Finalização
+        run: |
+          echo "======================================"
+          echo "CI concluído com sucesso!"
+          echo "======================================"
