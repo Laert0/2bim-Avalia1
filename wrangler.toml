@@ -1,8 +1,0 @@
-name = "2bim-avalia1"
-pages_build_output_dir = "public"
-
-[[d1_databases]]
-binding = "DB"
-database_name = "2bim-avalia1-db"
-database_id = "171af510-e2d3-49c6-8b4f-e1b5b1ca02c9"
-migrations_dir = "migrations"
