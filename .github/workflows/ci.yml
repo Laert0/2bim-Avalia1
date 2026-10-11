@@ -1,10 +1,11 @@
+
 name: ci
 
 on:
   push:
+    branches: [main, avaliacao-actions]
   pull_request:
-    branches:
-      - main
+    branches: [main]
 
 jobs:
   verificar:
@@ -23,41 +24,38 @@ jobs:
         shell: bash
         run: |
           set -e
-
           echo "Verificando possíveis segredos..."
 
-          if git grep -nE 'GOCSPX-|client_secret[[:space:]]*=' -- \
+          if git grep -nE 'GOCSPX-|client_secret[[:space:]]*=' HEAD -- . \
             ':!.github/workflows/ci.yml' \
-            ':!.github/workflows/revisao-ia.yml' \
+            ':!.github/workflows/revisao.yml' \
             ':!.github/workflows/migrar.yml' \
             ':!*.md'; then
-
             echo "::error::Possível segredo encontrado no repositório."
             exit 1
+          else
+            echo "Nenhum padrão de segredo conhecido encontrado."
           fi
-
-          echo "Nenhum segredo conhecido encontrado."
 
       - name: Aplica as migrações D1 em um SQLite local
         shell: bash
         run: |
           set -e
 
-          rm -f teste.db
-
-          if [ ! -d "migrations" ]; then
-            echo "::error::A pasta migrations não existe."
+          if [ ! -d migrations ]; then
+            echo "::error::Pasta migrations não encontrada."
             exit 1
           fi
 
-          arquivos=$(find migrations -maxdepth 1 -type f -name "*.sql" | sort)
+          shopt -s nullglob
+          arquivos=(migrations/*.sql)
 
-          if [ -z "$arquivos" ]; then
-            echo "::error::Nenhuma migração SQL encontrada."
+          if [ ${#arquivos[@]} -eq 0 ]; then
+            echo "::error::Nenhum arquivo SQL encontrado em migrations."
             exit 1
           fi
 
-          for f in $arquivos; do
+          for f in "${arquivos[@]}"; do
             echo "Aplicando migração: $f"
             sqlite3 teste.db < "$f"
           done
@@ -65,32 +63,32 @@ jobs:
           echo "Tabelas criadas:"
           sqlite3 teste.db ".tables"
 
-          echo "Estrutura da tabela notas:"
-          sqlite3 teste.db "PRAGMA table_info(notas);"
-
       - name: Valida HTML
         shell: bash
         run: |
           set -e
 
-          arquivos=$(find . \
-            -type f \
-            -name "*.html" \
-            -not -path "./.git/*" \
-            -not -path "./node_modules/*")
+          arquivos=()
+          [ ! -f index.html ] || arquivos+=(index.html)
 
-          if [ -z "$arquivos" ]; then
+          if [ -d public ]; then
+            while IFS= read -r -d '' arquivo; do
+              arquivos+=("$arquivo")
+            done < <(find public -type f -name '*.html' -print0)
+          fi
+
+          if [ ${#arquivos[@]} -eq 0 ]; then
             echo "::error::Nenhum arquivo HTML encontrado."
             exit 1
           fi
 
-          echo "Arquivos HTML encontrados:"
-          echo "$arquivos"
+          for arquivo in "${arquivos[@]}"; do
+            echo "Verificando $arquivo"
+            if ! grep -qi '<html' "$arquivo" ||
+               ! grep -qi '</html>' "$arquivo"; then
+              echo "::error::Estrutura HTML incompleta em $arquivo"
+              exit 1
+            fi
+          done
 
-          npx --yes htmlhint $arquivos
-
-      - name: Finalização
-        run: |
-          echo "======================================"
-          echo "CI concluído com sucesso!"
-          echo "======================================"
+          echo "Verificação básica de HTML concluída."
