@@ -31,7 +31,7 @@ O workflow foi executado manualmente na branch `main` com sucesso. Nessa execuç
 
 **Evidências:**
 - Execução bem-sucedida: [INSERIR LINK]
-- Pull request com comentários da IA: [INSERIR LINK]
+- Pull request com comentários da IA: https://github.com/Laert0/2bim-Avalia1/pull/1
 - Teste de permissão: [INSERIR LINK]
 
 **Avaliação crítica da IA:** [REGISTRAR UMA AFIRMAÇÃO INCORRETA OU IRRELEVANTE DA IA E EXPLICAR POR QUÊ.]
