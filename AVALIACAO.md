@@ -20,7 +20,7 @@ A proteção da branch principal deve exigir um pull request e a aprovação do 
 
 **Evidências:**
 - Pull request bloqueado: https://github.com/Laert0/2bim-Avalia1/pull/1
-- Pull request liberado: [INSERIR LINK]
+- Pull request liberado: https://github.com/Laert0/2bim-Avalia1/pull/1
 - Tentativa de push direto recusada: [INSERIR EVIDÊNCIA]
 
 ## Tarefa 3 — Revisão de pull request por IA
