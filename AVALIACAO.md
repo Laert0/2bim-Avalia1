@@ -10,7 +10,7 @@ O workflow `ci.yml` verifica possíveis segredos versionados, aplica as migraç�
 **Evidências:**
 - Execução verde:https://github.com/Laert0/2bim-Avalia1/actions/runs/38574484085
 - Execução vermelha: https://github.com/Laert0/2bim-Avalia1/actions/runs/38576639220
-- Log do erro proposital: [INSERIR LINK]
+- Log do erro proposital: https://github.com/Laert0/2bim-Avalia1/actions/runs/38576639220
 
 O teste local com SQLite permite identificar erros de sintaxe nas migrações antes de aplicá-las ao banco remoto D1.
 
