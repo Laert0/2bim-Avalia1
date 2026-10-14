@@ -41,7 +41,7 @@ O workflow foi executado manualmente na branch `main` com sucesso. Nessa execuç
 O workflow `migrar.yml` aplica as migrações no banco D1 remoto quando há alterações na pasta `migrations/` na branch `main`.
 
 **Evidências:**
-- Execução da migração: [INSERIR LINK]
+- Execução da migração:https://github.com/Laert0/2bim-Avalia1/actions/runs/38488559135
 - Confirmação da coluna `data_criacao`: [INSERIR EVIDÊNCIA]
 - Merge sem alterações em `migrations/`: [INSERIR EVIDÊNCIA]
 
