@@ -19,7 +19,7 @@ O teste local com SQLite permite identificar erros de sintaxe nas migrações an
 A proteção da branch principal deve exigir um pull request e a aprovação do status check `verificar` antes da mesclagem.
 
 **Evidências:**
-- Pull request bloqueado: [INSERIR LINK]
+- Pull request bloqueado: https://github.com/Laert0/2bim-Avalia1/pull/1
 - Pull request liberado: [INSERIR LINK]
 - Tentativa de push direto recusada: [INSERIR EVIDÊNCIA]
 
