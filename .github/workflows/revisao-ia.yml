@@ -1,0 +1,38 @@
+```yaml
+name: Revisao de codigo por IA
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  revisar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar codigo
+        uses: actions/checkout@v4
+
+      - name: Verificar configuracao do token
+        env:
+          COPILOT_PAT: ${{ secrets.COPILOT_PAT }}
+        run: |
+          if [ -z "$COPILOT_PAT" ]; then
+            echo "::error::O segredo COPILOT_PAT nao esta configurado."
+            exit 1
+          fi
+          echo "Segredo COPILOT_PAT encontrado."
+
+      - name: Informar escopo da revisao
+        run: |
+          echo "Workflow de revisao iniciado."
+          echo "A integracao efetiva com IA precisa ser configurada e testada."
+```
