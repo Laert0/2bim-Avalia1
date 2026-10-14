@@ -42,7 +42,7 @@ O workflow `migrar.yml` aplica as migrações no banco D1 remoto quando há alte
 
 **Evidências:**
 - Execução da migração:https://github.com/Laert0/2bim-Avalia1/actions/runs/38488559135
-- Confirmação da coluna `data_criacao`: [INSERIR EVIDÊNCIA]
+- Confirmação da coluna `data_criacao`: [Ver evidência](evidencias/evidencia-data-criacao.png)
 - Merge sem alterações em `migrations/`: [INSERIR EVIDÊNCIA]
 
 ## Perguntas
