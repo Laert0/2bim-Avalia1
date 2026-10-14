@@ -30,7 +30,7 @@ O workflow `revisao-ia.yml` utiliza o Copilot CLI para analisar alterações e, 
 O workflow foi executado manualmente na branch `main` com sucesso. Nessa execução, a IA informou que não havia alterações entre `origin/main` e `HEAD`. Esse teste confirma a execução do workflow, mas não comprova sozinho a revisão automática de um pull request.
 
 **Evidências:**
-- Execução bem-sucedida: [INSERIR LINK]
+- Execução bem-sucedida: https://github.com/Laert0/2bim-Avalia1/actions/runs/38585723536
 - Pull request com comentários da IA: https://github.com/Laert0/2bim-Avalia1/pull/1
 - Teste de permissão: [INSERIR LINK]
 
