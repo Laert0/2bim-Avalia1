@@ -1,0 +1,94 @@
+
+name: ci
+
+on:
+  push:
+    branches: [main, avaliacao-actions]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Instalar SQLite
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y sqlite3
+
+      - name: Procura segredos versionados
+        shell: bash
+        run: |
+          set -e
+          echo "Verificando possíveis segredos..."
+
+          if git grep -nE 'GOCSPX-|client_secret[[:space:]]*=' HEAD -- . \
+            ':!.github/workflows/ci.yml' \
+            ':!.github/workflows/revisao.yml' \
+            ':!.github/workflows/migrar.yml' \
+            ':!*.md'; then
+            echo "::error::Possível segredo encontrado no repositório."
+            exit 1
+          else
+            echo "Nenhum padrão de segredo conhecido encontrado."
+          fi
+
+      - name: Aplica as migrações D1 em um SQLite local
+        shell: bash
+        run: |
+          set -e
+
+          if [ ! -d migrations ]; then
+            echo "::error::Pasta migrations não encontrada."
+            exit 1
+          fi
+
+          shopt -s nullglob
+          arquivos=(migrations/*.sql)
+
+          if [ ${#arquivos[@]} -eq 0 ]; then
+            echo "::error::Nenhum arquivo SQL encontrado em migrations."
+            exit 1
+          fi
+
+          for f in "${arquivos[@]}"; do
+            echo "Aplicando migração: $f"
+            sqlite3 teste.db < "$f"
+          done
+
+          echo "Tabelas criadas:"
+          sqlite3 teste.db ".tables"
+
+      - name: Valida HTML
+        shell: bash
+        run: |
+          set -e
+
+          arquivos=()
+          [ ! -f index.html ] || arquivos+=(index.html)
+
+          if [ -d public ]; then
+            while IFS= read -r -d '' arquivo; do
+              arquivos+=("$arquivo")
+            done < <(find public -type f -name '*.html' -print0)
+          fi
+
+          if [ ${#arquivos[@]} -eq 0 ]; then
+            echo "::error::Nenhum arquivo HTML encontrado."
+            exit 1
+          fi
+
+          for arquivo in "${arquivos[@]}"; do
+            echo "Verificando $arquivo"
+            if ! grep -qi '<html' "$arquivo" ||
+               ! grep -qi '</html>' "$arquivo"; then
+              echo "::error::Estrutura HTML incompleta em $arquivo"
+              exit 1
+            fi
+          done
+
+          echo "Verificação básica de HTML concluída."

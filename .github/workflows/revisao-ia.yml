@@ -41,7 +41,8 @@ jobs:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
         run: |
           git fetch origin main
-          copilot -p "Revise as alteracoes entre origin/main e HEAD. Use git diff origin/main...HEAD. Procure erros, falhas de logica e problemas de seguranca. Nao modifique arquivos. Responda em portugues, de forma objetiva." \
+
+          copilot -p "Revise as alteracoes entre origin/main e HEAD. Use git diff origin/main...HEAD para identificar as mudancas. Aponte possiveis erros, problemas de seguranca e melhorias. Responda em portugues." \
             -s \
             --allow-tool='shell(git:*)' \
             --no-ask-user > revisao.md
