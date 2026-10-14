@@ -8,7 +8,7 @@
 O workflow `ci.yml` verifica possíveis segredos versionados, aplica as migrações SQL em um banco SQLite local e realiza uma validação básica dos arquivos HTML.
 
 **Evidências:**
-- Execução verde: [INSERIR LINK]
+- Execução verde:https://github.com/Laert0/2bim-Avalia1/actions/runs/38574484085
 - Execução vermelha: [INSERIR LINK]
 - Log do erro proposital: [INSERIR LINK]
 
