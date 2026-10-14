@@ -1,32 +1,16 @@
+
 import { gerarDesenho, numeroValido } from "../../lib/desenho.js";
 
 export async function onRequestPost(context) {
   try {
-    // --------------------------------------------------
-    // 1. Verifica o método
-    // --------------------------------------------------
-    if (context.request.method !== "POST") {
-      return new Response(
-        JSON.stringify({ erro: "Método não permitido." }),
-        {
-          status: 405,
-          headers: {
-            "Content-Type": "application/json; charset=utf-8"
-          }
-        }
-      );
-    }
-
-    // --------------------------------------------------
-    // 2. Verifica o corpo da requisição
-    // --------------------------------------------------
+    // 1. Verifica o corpo da requisicao
     let corpo;
 
     try {
       corpo = await context.request.json();
     } catch {
       return new Response(
-        JSON.stringify({ erro: "Corpo JSON inválido." }),
+        JSON.stringify({ erro: "Corpo JSON invalido." }),
         {
           status: 400,
           headers: {
@@ -36,12 +20,13 @@ export async function onRequestPost(context) {
       );
     }
 
+    // 2. Valida o numero informado
     const numero = Number(corpo?.numero);
 
     if (!numeroValido(numero)) {
       return new Response(
         JSON.stringify({
-          erro: "Número inválido. Informe um número inteiro entre 1 e 100."
+          erro: "Numero invalido. Informe um numero inteiro entre 1 e 100."
         }),
         {
           status: 400,
@@ -52,16 +37,12 @@ export async function onRequestPost(context) {
       );
     }
 
-    // --------------------------------------------------
-    // 3. Obtém o token do Google
-    // --------------------------------------------------
+    // 3. Verifica o token de autenticacao do Google
     const autorizacao = context.request.headers.get("Authorization");
 
     if (!autorizacao || !autorizacao.startsWith("Bearer ")) {
       return new Response(
-        JSON.stringify({
-          erro: "Token inválido ou ausente."
-        }),
+        JSON.stringify({ erro: "Token do Google ausente. Faca login novamente." }),
         {
           status: 401,
           headers: {
@@ -75,9 +56,7 @@ export async function onRequestPost(context) {
 
     if (!idToken) {
       return new Response(
-        JSON.stringify({
-          erro: "Token inválido ou ausente."
-        }),
+        JSON.stringify({ erro: "Token do Google invalido." }),
         {
           status: 401,
           headers: {
@@ -87,39 +66,21 @@ export async function onRequestPost(context) {
       );
     }
 
-    // --------------------------------------------------
-    // 4. Verifica o Client ID configurado no Cloudflare
-    // --------------------------------------------------
-    const clientId = context.env.GOOGLE_CLIENT_ID;
+    // 4. Obtem o Client ID do Google
+    // O Client ID e publico; o valor abaixo e uma alternativa
+    // caso a variavel nao esteja configurada no Cloudflare.
+    const clientId =
+      context.env?.GOOGLE_CLIENT_ID ||
+      "718627771735-mh3kmg16c2cff8punhqamhhbej03ncoj.apps.googleusercontent.com";
 
-    if (!clientId) {
-      return new Response(
-        JSON.stringify({
-          erro: "GOOGLE_CLIENT_ID não configurado no servidor."
-        }),
-        {
-          status: 500,
-          headers: {
-            "Content-Type": "application/json; charset=utf-8"
-          }
-        }
-      );
-    }
-
-    // --------------------------------------------------
-    // 5. Valida o ID Token diretamente com o Google
-    // --------------------------------------------------
+    // 5. Valida o token com o Google
     const respostaGoogle = await fetch(
-      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(
-        idToken
-      )}`
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
     );
 
     if (!respostaGoogle.ok) {
       return new Response(
-        JSON.stringify({
-          erro: "Token inválido."
-        }),
+        JSON.stringify({ erro: "Token do Google invalido ou expirado. Faca login novamente." }),
         {
           status: 401,
           headers: {
@@ -131,14 +92,10 @@ export async function onRequestPost(context) {
 
     const verificacao = await respostaGoogle.json();
 
-    // --------------------------------------------------
-    // 6. Confere se o token pertence ao nosso Client ID
-    // --------------------------------------------------
+    // 6. Confere se o token pertence ao Client ID esperado
     if (verificacao.aud !== clientId) {
       return new Response(
-        JSON.stringify({
-          erro: "Token inválido."
-        }),
+        JSON.stringify({ erro: "O login do Google nao corresponde ao Client ID configurado." }),
         {
           status: 401,
           headers: {
@@ -148,16 +105,12 @@ export async function onRequestPost(context) {
       );
     }
 
-    // --------------------------------------------------
-    // 7. Confere o e-mail
-    // --------------------------------------------------
+    // 7. Confere o e-mail e sua verificacao
     const email = verificacao.email;
 
     if (!email) {
       return new Response(
-        JSON.stringify({
-          erro: "E-mail não encontrado no token."
-        }),
+        JSON.stringify({ erro: "E-mail nao encontrado no token do Google." }),
         {
           status: 401,
           headers: {
@@ -167,16 +120,13 @@ export async function onRequestPost(context) {
       );
     }
 
-    // Aceita tanto true quanto "true"
     const emailVerificado =
       verificacao.email_verified === true ||
       verificacao.email_verified === "true";
 
     if (!emailVerificado) {
       return new Response(
-        JSON.stringify({
-          erro: "E-mail não verificado."
-        }),
+        JSON.stringify({ erro: "O e-mail da conta Google nao foi verificado." }),
         {
           status: 401,
           headers: {
@@ -186,14 +136,10 @@ export async function onRequestPost(context) {
       );
     }
 
-    // --------------------------------------------------
-    // 8. Gera o desenho SVG
-    // --------------------------------------------------
+    // 8. Gera o desenho
     const svg = gerarDesenho(numero, email);
 
-    // --------------------------------------------------
-    // 9. Retorna o SVG
-    // --------------------------------------------------
+    // 9. Retorna o desenho para o navegador
     return new Response(svg, {
       status: 200,
       headers: {
@@ -201,12 +147,13 @@ export async function onRequestPost(context) {
         "Cache-Control": "no-store"
       }
     });
+
   } catch (erro) {
     console.error("Erro na API /api/desenho:", erro);
 
     return new Response(
       JSON.stringify({
-        erro: "Erro interno ao gerar o desenho."
+        erro: "Erro interno ao gerar o desenho. Verifique os logs do Cloudflare."
       }),
       {
         status: 500,

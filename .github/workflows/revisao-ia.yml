@@ -31,7 +31,6 @@ jobs:
             echo "::error::O segredo COPILOT_PAT nao esta configurado."
             exit 1
           fi
-
           echo "Segredo COPILOT_PAT encontrado."
 
       - name: Instalar Copilot CLI
@@ -41,7 +40,9 @@ jobs:
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
         run: |
-          copilot -p "Revise as alteracoes deste pull request em relacao a branch main. Analise o resultado de git diff origin/main...HEAD. Procure erros, falhas de logica, problemas de seguranca e possiveis melhorias. Nao altere arquivos. Escreva a resposta em portugues, de forma objetiva, indicando os problemas encontrados e suas justificativas. Se nao encontrar problemas relevantes, informe isso." \
+          git fetch origin main
+
+          copilot -p "Revise as alteracoes entre origin/main e HEAD. Use git diff origin/main...HEAD para identificar as mudancas. Aponte possiveis erros, problemas de seguranca e melhorias. Responda em portugues." \
             -s \
             --allow-tool='shell(git:*)' \
             --no-ask-user > revisao.md
