@@ -32,7 +32,7 @@ O workflow foi executado manualmente na branch `main` com sucesso. Nessa execuç
 **Evidências:**
 - Execução bem-sucedida: https://github.com/Laert0/2bim-Avalia1/actions/runs/38585723536
 - Pull request com comentários da IA: https://github.com/Laert0/2bim-Avalia1/pull/1
-- Teste de permissão: [INSERIR LINK]
+- Teste de permissão: https://github.com/Laert0/2bim-Avalia1/actions/runs/38593638689/job/115954641396
 
 **Avaliação crítica da IA**:A IA apontou um possível risco no uso de `workflow_dispatch` no processo de migração D1. Essa observação é relevante, porém não significa que qualquer usuário possa executar migrações, pois o GitHub controla as permissões de execução. Portanto, a recomendação precisa ser analisada considerando as permissões e as regras de proteção do repositório.
 
