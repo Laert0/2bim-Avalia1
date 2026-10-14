@@ -1,4 +1,4 @@
-```yaml
+
 name: Revisao de codigo por IA
 
 on:
@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Baixar codigo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Verificar configuracao do token
         env:
@@ -29,10 +31,39 @@ jobs:
             echo "::error::O segredo COPILOT_PAT nao esta configurado."
             exit 1
           fi
+
           echo "Segredo COPILOT_PAT encontrado."
 
-      - name: Informar escopo da revisao
+      - name: Instalar Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Revisar codigo com IA
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_PAT }}
         run: |
-          echo "Workflow de revisao iniciado."
-          echo "A integracao efetiva com IA precisa ser configurada e testada."
-```
+          copilot -p "Revise as alteracoes deste pull request em relacao a branch main. Analise o resultado de git diff origin/main...HEAD. Procure erros, falhas de logica, problemas de seguranca e possiveis melhorias. Nao altere arquivos. Escreva a resposta em portugues, de forma objetiva, indicando os problemas encontrados e suas justificativas. Se nao encontrar problemas relevantes, informe isso." \
+            -s \
+            --allow-tool='shell(git:*)' \
+            --no-ask-user > revisao.md
+
+          if [ ! -s revisao.md ]; then
+            echo "::error::A revisao por IA nao gerou resultado."
+            exit 1
+          fi
+
+          cat revisao.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Publicar revisao no pull request
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const revisao = fs.readFileSync('revisao.md', 'utf8');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: '## Revisao de codigo por IA\n\n' + revisao
+            });
